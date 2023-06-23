@@ -93,6 +93,7 @@ public final class DefaultOAuth2AuthorizedClientManager implements OAuth2Authori
 			.refreshToken()
 			.clientCredentials()
 			.password()
+			.tokenExchange()
 			.build();
 	// @formatter:on
 

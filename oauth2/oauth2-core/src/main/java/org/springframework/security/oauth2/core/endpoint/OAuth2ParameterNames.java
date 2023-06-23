@@ -182,6 +182,48 @@ public final class OAuth2ParameterNames {
 	 */
 	public static final String INTERVAL = "interval";
 
+	// TODO: Fix javadoc
+	/**
+	 * {@code subject_token} - used in Access Token Request.
+	 */
+	public static final String SUBJECT_TOKEN = "subject_token";
+
+	// TODO: Fix javadoc
+	/**
+	 * {@code subject_token_type} - used in Access Token Request.
+	 */
+	public static final String SUBJECT_TOKEN_TYPE = "subject_token_type";
+
+	// TODO: Fix javadoc
+	/**
+	 * {@code actor_token} - used in Access Token Request.
+	 */
+	public static final String ACTOR_TOKEN = "actor_token";
+
+	// TODO: Fix javadoc
+	/**
+	 * {@code actor_token_type} - used in Access Token Request.
+	 */
+	public static final String ACTOR_TOKEN_TYPE = "actor_token_type";
+
+	// TODO: Fix javadoc
+	/**
+	 * {@code requested_token_type} - used in Access Token Request.
+	 */
+	public static final String REQUESTED_TOKEN_TYPE = "requested_token_type";
+
+	// TODO: Fix javadoc
+	/**
+	 * {@code audience} - used in Access Token Request.
+	 */
+	public static final String AUDIENCE = "audience";
+
+	// TODO: Fix javadoc
+	/**
+	 * {@code resource} - used in Access Token Request.
+	 */
+	public static final String RESOURCE = "resource";
+
 	private OAuth2ParameterNames() {
 	}
 

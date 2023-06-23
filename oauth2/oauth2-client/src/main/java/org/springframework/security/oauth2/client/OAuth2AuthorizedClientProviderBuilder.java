@@ -24,11 +24,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
-import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
-import org.springframework.security.oauth2.client.endpoint.OAuth2ClientCredentialsGrantRequest;
-import org.springframework.security.oauth2.client.endpoint.OAuth2PasswordGrantRequest;
-import org.springframework.security.oauth2.client.endpoint.OAuth2RefreshTokenGrantRequest;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.security.oauth2.client.endpoint.*;
 import org.springframework.util.Assert;
 
 /**
@@ -47,6 +46,7 @@ import org.springframework.util.Assert;
  * @see RefreshTokenOAuth2AuthorizedClientProvider
  * @see ClientCredentialsOAuth2AuthorizedClientProvider
  * @see PasswordOAuth2AuthorizedClientProvider
+ * @see TokenExchangeOAuth2AuthorizedClientProvider
  * @see DelegatingOAuth2AuthorizedClientProvider
  */
 public final class OAuth2AuthorizedClientProviderBuilder {
@@ -169,6 +169,29 @@ public final class OAuth2AuthorizedClientProviderBuilder {
 	}
 
 	/**
+	 * Configures support for the {@code urn:ietf:params:oauth:grant-type:token-exchange} grant.
+	 * @return the {@link OAuth2AuthorizedClientProviderBuilder}
+	 */
+	public OAuth2AuthorizedClientProviderBuilder tokenExchange() {
+		this.builders.computeIfAbsent(TokenExchangeOAuth2AuthorizedClientProvider.class,
+				(k) -> new TokenExchangeGrantBuilder());
+		return OAuth2AuthorizedClientProviderBuilder.this;
+	}
+
+	/**
+	 * Configures support for the {@code urn:ietf:params:oauth:grant-type:token-exchange} grant.
+	 * @param builderConsumer a {@code Consumer} of {@link TokenExchangeGrantBuilder}
+	 * used for further configuration
+	 * @return the {@link OAuth2AuthorizedClientProviderBuilder}
+	 */
+	public OAuth2AuthorizedClientProviderBuilder tokenExchange(Consumer<TokenExchangeGrantBuilder> builderConsumer) {
+		TokenExchangeGrantBuilder builder = (TokenExchangeGrantBuilder) this.builders.computeIfAbsent(
+				TokenExchangeOAuth2AuthorizedClientProvider.class, (k) -> new TokenExchangeGrantBuilder());
+		builderConsumer.accept(builder);
+		return OAuth2AuthorizedClientProviderBuilder.this;
+	}
+
+	/**
 	 * Builds an instance of {@link DelegatingOAuth2AuthorizedClientProvider} composed of
 	 * one or more {@link OAuth2AuthorizedClientProvider}(s).
 	 * @return the {@link DelegatingOAuth2AuthorizedClientProvider}
@@ -184,6 +207,102 @@ public final class OAuth2AuthorizedClientProviderBuilder {
 	interface Builder {
 
 		OAuth2AuthorizedClientProvider build();
+
+	}
+
+	/**
+	 * A builder for the {@code urn:ietf:params:oauth:grant-type:token-exchange} grant.
+	 */
+	public final class TokenExchangeGrantBuilder implements Builder {
+
+		private OAuth2AccessTokenResponseClient<TokenExchangeGrantRequest> accessTokenResponseClient;
+
+		private Function<OAuth2AuthorizationContext, TokenExchangePartyIdentifierToken> subjectTokenResolver;
+
+		private Converter<TokenExchangeActorTokenConverterRequest, TokenExchangePartyIdentifierToken> actorTokenConverter;
+
+		private Duration clockSkew;
+
+		private Clock clock;
+
+		private TokenExchangeGrantBuilder() {
+		}
+
+		/**
+		 * Sets the client used when requesting an access token credential at the Token
+		 * Endpoint.
+		 * @param accessTokenResponseClient the client used when requesting an access
+		 * token credential at the Token Endpoint
+		 * @return the {@link TokenExchangeGrantBuilder}
+		 */
+		public TokenExchangeGrantBuilder accessTokenResponseClient(
+				OAuth2AccessTokenResponseClient<TokenExchangeGrantRequest> accessTokenResponseClient) {
+			this.accessTokenResponseClient = accessTokenResponseClient;
+			return this;
+		}
+
+		/**
+		 * Sets the maximum acceptable clock skew, which is used when checking the access
+		 * token expiry. An access token is considered expired if
+		 * {@code OAuth2Token#getExpiresAt() - clockSkew} is before the current time
+		 * {@code clock#instant()}.
+		 * @param clockSkew the maximum acceptable clock skew
+		 * @return the {@link TokenExchangeGrantBuilder}
+		 * @see ClientCredentialsOAuth2AuthorizedClientProvider#setClockSkew(Duration)
+		 */
+		public TokenExchangeGrantBuilder clockSkew(Duration clockSkew) {
+			this.clockSkew = clockSkew;
+			return this;
+		}
+
+		/**
+		 * Sets the {@link Clock} used in {@link Instant#now(Clock)} when checking the
+		 * access token expiry.
+		 * @param clock the clock
+		 * @return the {@link TokenExchangeGrantBuilder}
+		 */
+		public TokenExchangeGrantBuilder clock(Clock clock) {
+			this.clock = clock;
+			return this;
+		}
+
+		// TODO: Javadoc
+		public TokenExchangeGrantBuilder subjectTokenResolver(
+				Function<OAuth2AuthorizationContext, TokenExchangePartyIdentifierToken> subjectTokenResolver) {
+			this.subjectTokenResolver = subjectTokenResolver;
+			return this;
+		}
+
+		// TODO: Javadoc
+		public TokenExchangeGrantBuilder actorTokenConverter(
+				Converter<TokenExchangeActorTokenConverterRequest, TokenExchangePartyIdentifierToken> actorTokenConverter) {
+			this.actorTokenConverter = actorTokenConverter;
+			return this;
+		}
+
+		/**
+		 * Builds an instance of {@link TokenExchangeOAuth2AuthorizedClientProvider}.
+		 * @return the {@link TokenExchangeOAuth2AuthorizedClientProvider}
+		 */
+		@Override
+		public OAuth2AuthorizedClientProvider build() {
+			TokenExchangeOAuth2AuthorizedClientProvider authorizedClientProvider =
+					new TokenExchangeOAuth2AuthorizedClientProvider();
+			if (this.clockSkew != null) {
+				authorizedClientProvider.setClockSkew(this.clockSkew);
+			}
+			if (this.clock != null) {
+				authorizedClientProvider.setClock(this.clock);
+			}
+			if (this.accessTokenResponseClient != null) {
+				authorizedClientProvider.setAccessTokenResponseClient(this.accessTokenResponseClient);
+			}
+			if (this.subjectTokenResolver != null) {
+				authorizedClientProvider.setSubjectTokenResolver(this.subjectTokenResolver);
+			}
+			authorizedClientProvider.setActorTokenConverter(this.actorTokenConverter);
+			return authorizedClientProvider;
+		}
 
 	}
 
