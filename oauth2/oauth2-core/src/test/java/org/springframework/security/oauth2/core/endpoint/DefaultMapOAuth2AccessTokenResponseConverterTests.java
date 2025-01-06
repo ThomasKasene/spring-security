@@ -120,6 +120,30 @@ public class DefaultMapOAuth2AccessTokenResponseConverterTests {
 		assertThat(additionalParameters).isEmpty();
 	}
 
+	// gh-14915
+	@Test
+	public void shouldConvertWithDpopTokenType() {
+		Map<String, Object> map = new HashMap<>();
+		map.put("access_token", "access-token-1234");
+		map.put("token_type", "dpop");
+		map.put("expires_in", "3600");
+		OAuth2AccessTokenResponse converted = this.messageConverter.convert(map);
+		OAuth2AccessToken accessToken = converted.getAccessToken();
+		assertThat(accessToken).isNotNull();
+		assertThat(accessToken.getTokenValue()).isEqualTo("access-token-1234");
+		assertThat(accessToken.getTokenType()).isEqualTo(OAuth2AccessToken.TokenType.DPOP);
+		Set<String> scopes = accessToken.getScopes();
+		assertThat(scopes).isNotNull();
+		assertThat(scopes).isEmpty();
+		assertThat(Duration.between(accessToken.getIssuedAt(), accessToken.getExpiresAt()).getSeconds())
+				.isEqualTo(3600);
+		OAuth2RefreshToken refreshToken = converted.getRefreshToken();
+		assertThat(refreshToken).isNull();
+		Map<String, Object> additionalParameters = converted.getAdditionalParameters();
+		assertThat(additionalParameters).isNotNull();
+		assertThat(additionalParameters).isEmpty();
+	}
+
 	// gh-9685
 	@Test
 	public void shouldConvertWithNumericExpiresIn() {

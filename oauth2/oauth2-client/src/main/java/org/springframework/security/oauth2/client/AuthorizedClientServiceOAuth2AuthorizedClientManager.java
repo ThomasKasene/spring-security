@@ -28,6 +28,7 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.core.OAuth2AuthorizationException;
 import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
+import org.springframework.security.oauth2.core.dpop.DpopTokenErrorCodes;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -144,8 +145,14 @@ public final class AuthorizedClientServiceOAuth2AuthorizedClientManager implemen
 			authorizedClient = this.authorizedClientProvider.authorize(authorizationContext);
 		}
 		catch (OAuth2AuthorizationException ex) {
-			this.authorizationFailureHandler.onAuthorizationFailure(ex, principal, Collections.emptyMap());
-			throw ex;
+			String errorCode = ex.getError().getErrorCode();
+			if (DpopTokenErrorCodes.USE_DPOP_NONCE.equals(errorCode)
+					|| DpopTokenErrorCodes.INVALID_DPOP_PROOF.equals(errorCode)) {
+				authorizedClient = this.authorizedClientProvider.authorize(authorizationContext);
+			} else {
+				this.authorizationFailureHandler.onAuthorizationFailure(ex, principal, Collections.emptyMap());
+				throw ex;
+			}
 		}
 		if (authorizedClient != null) {
 			this.authorizationSuccessHandler.onAuthorizationSuccess(authorizedClient, principal,
